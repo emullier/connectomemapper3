@@ -599,7 +599,7 @@ class fMRIPipeline(Pipeline):
             ("wm_mask_registered.nii.gz", self.subject + "_space-meanBOLD_label-WM_dseg.nii.gz",),
             ("eroded_csf_registered.nii.gz", self.subject + "_space-meanBOLD_desc-eroded_label-CSF_dseg.nii.gz"),
             ("eroded_wm_registered.nii.gz", self.subject + "_space-meanBOLD_desc-eroded_label-WM_dseg.nii.gz"),
-            ("fMRI_despike_st_mcf.nii.gz_mean_reg.nii.gz", self.subject + "_meanBOLD.nii.gz"),
+            ("fMRI_despike_st_mcf_mean_reg.nii.gz", self.subject + "_meanBOLD.nii.gz"),
             ("fMRI_despike_st_mcf.nii.gz.par", self.subject + "_motion.tsv"),
             ("FD.npy", self.subject + "_desc-scrubbing_FD.npy"),
             ("DVARS.npy", self.subject + "_desc-scrubbing_DVARS.npy"),

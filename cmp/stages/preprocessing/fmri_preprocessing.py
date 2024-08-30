@@ -136,7 +136,7 @@ class PreprocessingStage(Stage):
 
         despiking_output = pe.Node(
             interface=util.IdentityInterface(fields=["despiking_output"]),
-            name="despkiking_output",
+            name="despiking_output",
         )
         if self.config.despiking:
             despike = pe.Node(interface=Despike(), name="afni_despike")
@@ -183,6 +183,7 @@ class PreprocessingStage(Stage):
         #     try:
 
         if self.config.motion_correction:
+
             mo_corr = pe.Node(
                 interface=fsl.MCFLIRT(
                     stats_imgs=True, save_mats=False, save_plots=True, mean_vol=True
@@ -190,20 +191,60 @@ class PreprocessingStage(Stage):
                 name="motion_correction",
             )
 
+            #tmp = pe.Node(
+            #    interface=fsl.MCFLIRT(out_file='fMRI_despike_mcf',
+            #        stats_imgs=True, save_mats=False, save_plots=True, mean_vol=True
+            #    ),
+            #    name="motion_correction_2",
+            #)
+
+            def rename_back(output_file):
+                # Construct the new file name with the original base name
+                new_file_name = output_file.replace(".nii.gz_", "")
+                new_file_path = os.path.join(os.path.dirname(output_file), new_file_name)
+                # Rename the file
+                os.rename(output_file, new_file_path)
+                return new_file_path
+
+
+            rename_par_file_node = pe.Node(
+                util.Function(
+                input_names=["input_file"],
+                output_names=["renamed_file"],
+                function=rename_back,
+            ),
+            name="rename_par_file"
+            )       
+
+            rename_mean_img_node = pe.Node(
+                util.Function(
+                input_names=["input_file"],
+                output_names=["renamed_file"],
+                function=rename_back,
+            ),
+            name="rename_mean_img"
+            )
+
+
         if self.config.slice_timing != "none":
             # fmt:off
             flow.connect(
                 [(despiking_output, slc_timing, [("despiking_output", "in_file")])]
             )
+
             # fmt:on
             if self.config.motion_correction:
                 # fmt:off
                 flow.connect(
                     [
-                        (slc_timing, mo_corr, [("slice_time_corrected_file", "in_file")],),
+                        (slc_timing, mo_corr [("slice_time_corrected_file", "in_file")],),
                         (mo_corr, outputnode, [("out_file", "functional_preproc")]),
-                        (mo_corr, outputnode, [("par_file", "par_file")]),
-                        (mo_corr, outputnode, [("mean_img", "mean_vol")]),
+                        (mo_corr, rename_par_file_node, [("par_file", "input_file")]),
+                        (rename_par_file_node, outputnode, [("renamed_file", "par_file")]),
+                        (mo_corr, rename_mean_img_node, [("mean_img", "input_file")]),
+                        (rename_mean_img_node, outputnode, [("renamed_file", "mean_vol")]),
+                        #(mo_corr, outputnode, [("par_file", "par_file")]),
+                        #(mo_corr, outputnode, [("mean_img", "mean_vol")]),
                     ]
                 )
                 # fmt:on
@@ -224,9 +265,14 @@ class PreprocessingStage(Stage):
                 flow.connect(
                     [
                         (despiking_output, mo_corr, [("despiking_output", "in_file")]),
-                        (mo_corr, outputnode, [("out_file", "functional_preproc"),
-                                               ("par_file", "par_file"),
-                                               ("mean_img", "mean_vol")]),
+                        #(mo_corr, outputnode, [("out_file", "functional_preproc"),
+                        #                       ("par_file", "par_file"),
+                        #                       ("mean_img", "mean_vol")]),
+                        (mo_corr, outputnode, [("out_file", "functional_preproc")]),
+                        (mo_corr, rename_par_file_node, [("par_file", "input_names")]),
+                        (rename_par_file_node, outputnode, [("output_names", "par_file")]),
+                        (mo_corr, rename_mean_img_node, [("mean_img", "input_names")]),
+                        (rename_mean_img_node, outputnode, [("output_names", "mean_vol")]),                 
                     ]
                 )
                 # fmt:on

@@ -627,6 +627,7 @@ class CreateIndexFile(BaseInterface):
             np.savetxt(out_f, mat, delimiter=' ', fmt="%1.0g")
 
         return runtime
+    
 
     def _list_outputs(self):
         outputs = self._outputs().get()

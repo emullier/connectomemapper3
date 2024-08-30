@@ -80,13 +80,13 @@ class DTIEstimateResponseSH(DipyDiffusionInterface):
         affine = img.affine
 
         if isdefined(self.inputs.in_mask):
-            msk = nib.load(self.inputs.in_mask).get_data()
+            msk = nib.load(self.inputs.in_mask).get_fdata()
             msk[msk > 0] = 1
             msk[msk < 0] = 0
         else:
             msk = np.ones(imref.shape)
 
-        data = img.get_data().astype(np.float32)
+        data = img.get_fdata().astype(np.float32)
         gtab = self._get_gradient_table()
 
         # Fit it
@@ -111,7 +111,7 @@ class DTIEstimateResponseSH(DipyDiffusionInterface):
             MD = np.nan_to_num(mean_diffusivity(ten_fit.evals)) * msk
             indices = np.logical_or(
                 FA >= 0.4, (np.logical_and(FA >= 0.15, MD >= 0.0011)))
-            data = nib.load(self.inputs.in_file).get_data()
+            data = nib.load(self.inputs.in_file).get_fdata()
             response = recursive_response(gtab, data, mask=indices, sh_order=8,
                                           peak_thr=0.01, init_fa=0.08,
                                           init_trace=0.0021, iter=8,
@@ -241,16 +241,16 @@ class CSD(DipyDiffusionInterface):
             for i in range(len(index)):
                 idx = index[:]
                 idx[i] = [0, -1]
-                out[idx] = 0.
+                out[int(idx)] = 0.
             return out
 
         if isdefined(self.inputs.in_mask):
             msk = clipMask(
-                nib.load(self.inputs.in_mask).get_data().astype('float32'))
+                nib.load(self.inputs.in_mask).get_fdata().astype('float32'))
         else:
             msk = clipMask(np.ones(imref.shape).astype('float32'))
 
-        data = img.get_data().astype(np.float32)
+        data = img.get_fdata().astype(np.float32)
         data[msk == 0] *= 0
 
         # hdr = imref.header.copy()
@@ -427,16 +427,16 @@ class SHORE(DipyDiffusionInterface):
             for i in range(len(index)):
                 idx = index[:]
                 idx[i] = [0, -1]
-                out[idx] = 0.
+                out[tuple(idx)] = 0.
             return out
 
         if isdefined(self.inputs.in_mask):
             msk = clipMask(
-                nib.load(self.inputs.in_mask).get_data().astype('float32'))
+                nib.load(self.inputs.in_mask).get_fdata().astype('float32'))
         else:
             msk = clipMask(np.ones(imref.shape).astype('float32'))
 
-        data = img.get_data().astype(np.float32)
+        data = img.get_fdata().astype(np.float32)
         data[msk == 0] *= 0
 
         # hdr = imref.header.copy()
@@ -582,13 +582,13 @@ class TensorInformedEudXTractography(DipyBaseInterface):
         imref = nib.four_to_three(img)[0]
         affine = img.affine
 
-        data = img.get_data().astype(np.float32)
+        data = img.get_fdata().astype(np.float32)
         hdr = imref.header.copy()
         hdr.set_data_dtype(np.float32)
         hdr['data_type'] = 16
 
         trkhdr = nib.trackvis.empty_header()
-        trkhdr['dim'] = imref.get_data().shape
+        trkhdr['dim'] = imref.get_fdata().shape
         trkhdr['voxel_size'] = imref.get_header().get_zooms()[:3]
         trkhdr['voxel_order'] = 'ras'
         # trackvis_affine = utils.affine_for_trackvis(trkhdr['voxel_size'])
@@ -602,12 +602,12 @@ class TensorInformedEudXTractography(DipyBaseInterface):
             for i in range(len(index)):
                 idx = index[:]
                 idx[i] = [0, -1]
-                out[idx] = 0.
+                out[int(idx)] = 0.
             return out
 
         if isdefined(self.inputs.tracking_mask):
             IFLOGGER.info('Loading Tracking Mask')
-            tmsk = clipMask(nib.load(self.inputs.tracking_mask).get_data())
+            tmsk = clipMask(nib.load(self.inputs.tracking_mask).get_fdata())
             tmsk[tmsk > 0] = 1
             tmsk[tmsk < 0] = 0
         else:
@@ -617,9 +617,9 @@ class TensorInformedEudXTractography(DipyBaseInterface):
 
         if isdefined(self.inputs.seed_mask[0]):
             IFLOGGER.info('Loading Seed Mask')
-            seedmsk = nib.load(self.inputs.seed_mask[0]).get_data()
+            seedmsk = nib.load(self.inputs.seed_mask[0]).get_fdata()
             IFLOGGER.info(f'  - Loaded Seed Mask Shape: {seedmsk.shape}')
-            # seedmsk = clipMask(nib.load(self.inputs.seed_mask[0]).get_data())
+            # seedmsk = clipMask(nib.load(self.inputs.seed_mask[0]).get_fdata())
             # assert (seedmsk.shape == data.shape[:3])
             seedmsk[seedmsk > 0] = 1
             seedmsk[seedmsk < 1] = 0
@@ -647,7 +647,7 @@ class TensorInformedEudXTractography(DipyBaseInterface):
 
         IFLOGGER.info('Loading and masking FA')
         img_fa = nib.load(self.inputs.in_fa)
-        fa = img_fa.get_data().astype(np.float32)
+        fa = img_fa.get_fdata().astype(np.float32)
         fa = fa * tmsk
 
         IFLOGGER.info('Saving masked FA')
@@ -815,7 +815,7 @@ class DirectionGetterTractography(DipyBaseInterface):
         imref = nib.four_to_three(img)[0]
         affine = img.affine
 
-        data = img.get_data().astype(np.float32)
+        data = img.get_fdata().astype(np.float32)
         hdr = imref.header.copy()
         hdr.set_data_dtype(np.float32)
         hdr['data_type'] = 16
@@ -856,16 +856,16 @@ class DirectionGetterTractography(DipyBaseInterface):
 
             IFLOGGER.info('Building CMC Tissue Classifier')
 
-            cmc_classifier = CmcStoppingCriterion.from_pve(img_pve_wm.get_data(),
-                                                           img_pve_gm.get_data(),
-                                                           img_pve_csf.get_data(),
+            cmc_classifier = CmcStoppingCriterion.from_pve(img_pve_wm.get_fdata(),
+                                                           img_pve_gm.get_fdata(),
+                                                           img_pve_csf.get_fdata(),
                                                            step_size=step_size,
                                                            average_voxel_size=voxel_size)
 
             if self.inputs.recon_model == 'CSD':
                 IFLOGGER.info('Creating mask used by CSD model from partial volume maps of GM and WM')
 
-                tmsk = img_pve_wm.get_data() + img_pve_gm.get_data()
+                tmsk = img_pve_wm.get_fdata() + img_pve_gm.get_fdata()
                 tmsk[tmsk > 0] = 1
                 tmsk[tmsk < 0] = 0
 
@@ -873,7 +873,7 @@ class DirectionGetterTractography(DipyBaseInterface):
             # pve_sum = np.zeros(imref.shape)
             # for pve_file in self.inputs.in_partial_volume_files:
             #     pve_img = nib.load(pve_file)
-            #     pve_data = pve_img.get_data().astype(np.float32)
+            #     pve_data = pve_img.get_fdata().astype(np.float32)
             #     pve_sum = pve_sum + pve_data
             #
             # background[pve_sum>0] = 0
@@ -882,7 +882,7 @@ class DirectionGetterTractography(DipyBaseInterface):
             # exclude_map = np.zeros(imref.shape)
             # for pve_file in self.inputs.in_partial_volume_files:
             #     pve_img = nib.load(pve_file)
-            #     pve_data = pve_img.get_data().astype(np.float32)
+            #     pve_data = pve_img.get_fdata().astype(np.float32)
             #     if "pve_0" in pve_file:# CSF
             #         exclude_map = pve_data
             #     elif "pve_1" in pve_file:# GM
@@ -894,7 +894,7 @@ class DirectionGetterTractography(DipyBaseInterface):
         else:
             if isdefined(self.inputs.tracking_mask):
                 IFLOGGER.info('Loading Tracking Mask')
-                tmsk = clipMask(nib.load(self.inputs.tracking_mask).get_data())
+                tmsk = clipMask(nib.load(self.inputs.tracking_mask).get_fdata())
                 tmsk[tmsk > 0] = 1
                 tmsk[tmsk < 0] = 0
             else:
@@ -902,7 +902,7 @@ class DirectionGetterTractography(DipyBaseInterface):
 
             IFLOGGER.info('Loading and masking FA')
             img_fa = nib.load(self.inputs.in_fa)
-            fa = img_fa.get_data().astype(np.float32)
+            fa = img_fa.get_fdata().astype(np.float32)
             fa = fa * tmsk
 
             IFLOGGER.info('Saving masked FA')
@@ -921,11 +921,11 @@ class DirectionGetterTractography(DipyBaseInterface):
             # Handle GMWM interface or seed mask
             if self.inputs.seed_from_gmwmi and isdefined(self.inputs.gmwmi_file):
                 IFLOGGER.info(f'Loading Seed Mask from {self.inputs.gmwmi_file}')
-                seedmsk = nib.load(self.inputs.gmwmi_file).get_data()
+                seedmsk = nib.load(self.inputs.gmwmi_file).get_fdata()
                 seedmsk = np.squeeze(seedmsk)
             else:
                 IFLOGGER.info(f'Loading Seed Mask from {self.inputs.seed_mask[0]}')
-                seedmsk = nib.load(self.inputs.seed_mask[0]).get_data()
+                seedmsk = nib.load(self.inputs.seed_mask[0]).get_fdata()
 
             # assert (seedmsk.shape == data.shape[:3])
             # seedmsk = clipMask(seedmsk)
@@ -995,7 +995,7 @@ class DirectionGetterTractography(DipyBaseInterface):
                                                                sphere=sphere)
         else:
             IFLOGGER.info('Loading SHORE FOD')
-            sh = nib.load(self.inputs.fod_file).get_data()
+            sh = nib.load(self.inputs.fod_file).get_fdata()
             sh = np.nan_to_num(sh)
             IFLOGGER.info('Generating peaks from SHORE model')
             if self.inputs.algo == 'deterministic':
@@ -1144,7 +1144,7 @@ class MAPMRI(DipyDiffusionInterface):
         img = nib.load(self.inputs.in_file)
         affine = img.affine
 
-        data = img.get_data().astype(np.float32)
+        data = img.get_fdata().astype(np.float32)
         gtab = self._get_gradient_table()
         gtab = gradient_table(
             bvals=gtab.bvals, bvecs=gtab.bvecs,

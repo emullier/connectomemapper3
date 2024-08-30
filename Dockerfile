@@ -1,13 +1,13 @@
 ##################################################################
-# Use Ubuntu 16.04 LTS as base image
+# Use Ubuntu 24.04 as base image
 ##################################################################
-FROM ubuntu:xenial-20210804 AS main
+#FROM ubuntu:xenial-20210804 AS main
+FROM ubuntu:24.04
 
 #########################################################
 # Set environment variable to avoid interactive prompts
 #########################################################
 ENV DEBIAN_FRONTEND=noninteractive
-
 
 ##################################################################
 # Pre-cache neurodebian key
@@ -20,14 +20,13 @@ COPY docker/files/neurodebian.gpg /root/.neurodebian.gpg
 # exfat-fuse exfat-utils Neurodebian
 ##################################################################
 # Set environment variables to avoid interactive prompts during package installation
-ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install software-properties-common -y && \
     apt-get install -qq -y --no-install-recommends bc \
     locales libstdc++6 npm curl perl gzip bzip2 xvfb liblzma-dev locate exfat-fuse exfat-utils default-jre && \
-    curl -sSL http://neuro.debian.net/lists/xenial.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+    curl -sSL  http://neuro.debian.net/lists/noble.de-fzj.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
     apt-key add /root/.neurodebian.gpg && \
-    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true) && \
+    (apt-key adv --refresh-keys --keyserver hkps://keyserver.ubuntu.com 0xA5D32F012649A5A9 || true) && \
     localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 && \
     apt-get update && \
     apt-get clean && \
@@ -35,7 +34,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ##################################################################
-## Install freesurfer 7.1.1, FSL and AFNI
+## Install freesurfer 7.4.1, FSL and AFNI
 ##################################################################
 FROM main AS neurobuntu
 
@@ -46,7 +45,7 @@ WORKDIR /opt/freesurfer
 RUN apt-get update && \
     apt-get install -qq -y --no-install-recommends curl && \
     apt-get install libssl-dev && \
-    curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.1.1/freesurfer-linux-centos6_x86_64-7.1.1.tar.gz | tar zxv --no-same-owner -C /opt \
+    curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.4.1/freesurfer-linux-centos7_x86_64-7.4.1.tar.gz | tar zxv --no-same-owner -C /opt \
     --exclude='freesurfer/diffusion' \
     --exclude='freesurfer/docs' \
     --exclude='freesurfer/fsfast' \
@@ -69,7 +68,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Installing the Matlab R2014b
-# Required by the brainstem and hippocampal subfield modules in FreeSurfer 7.1.1
+# Required by the brainstem and hippocampal subfield modules in FreeSurfer 7.4.1
 WORKDIR /opt/freesurfer/bin
 
 ENV OS="Linux" FREESURFER_HOME="/opt/freesurfer"
@@ -88,13 +87,24 @@ RUN apt-get update && \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     dc wget \
-    fsl-core=5.0.9-5~nd16.04+1 \
-    fsl-mni152-templates=5.0.7-2 \
+    fsl-core \
+    fsl-mni152-templates \
     fsl-5.0-eddy-nonfree \
-    afni=16.2.07~dfsg.1-5~nd16.04+1 && \
+    afni && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+### Manual installation 08.24
+### curl -O https://afni.nimh.nih.gov/pub/dist/tgz/linux_ubuntu_16_64.tgz
+### tar xzvf linux_ubuntu_16_64.tgz
+### mv linux_ubuntu_16_64.tgz afni
+### echo 'export PATH=./afni:$PATH' >> ~/.bashrc
+### source ~/.bashrc
+
+
+
+
+### TO BE REPLACED???
 # Patch that replaces replace aff2rigid fsl_abspath fsladd imglob
 # for python3 compatibility
 WORKDIR /tmp
@@ -104,10 +114,6 @@ RUN wget https://fsl.fmrib.ox.ac.uk/fsldownloads/patches/fsl-5.0.10-python3.tar.
     && cp ./fsl/bin/* "$FSLDIR/bin/" \
     && rm -r ./fsl*
 
-# Mark a package as being manually installed, which will
-# prevent the package from being automatically removed if no other packages
-# depend on it
-#RUN apt-mark manual package_name
 
 ##################################################################
 ## Install Miniconda3 and the environment incl. ANTs and MRtrix
@@ -133,25 +139,18 @@ RUN apt-get update && \
 
 
 ## Create conda environment, including ANTs 2.2.0 and MRtrix 3.0.2
-ENV CONDA_ENV="py38cmp-core"
+ENV CONDA_ENV="py11cmp-core"
 COPY docker/spec-file.txt /app/spec-file.txt
 COPY docker/requirements.txt /app/requirements.txt
 COPY docker/environment.yml /app/environment.yml
 RUN /bin/bash -c "conda config --set default_threads 4"
 RUN /bin/bash -c "conda env create --file /app/environment.yml" 
 RUN /bin/bash -c ". activate ${CONDA_ENV}"
-#RUN /bin/bash -c "pip install --upgrade pip setuptools wheel"
-RUN /bin/bash -c "conda install python==3.8"
-RUN /bin/bash -c "pip install --upgrade setuptools==58.0.4"
+RUN /bin/bash -c "conda install python==3.11"
 RUN /bin/bash -c "pip install -r /app/requirements.txt"
-#RUN /bin/bash -c "conda clean -v --all --yes"
+RUN /bin/bash -c "conda clean -v --all --yes"
 RUN /bin/bash -c "rm -rf ~/.conda ~/.cache/pip/*"
 
-##################################################################
-# Install BIDS validator
-##################################################################
-# RUN npm install -g bids-validator && \
-#     rm -rf ~/.npm ~/.empty
 
 ##################################################################
 # Installation of Connectome Mapper 3 packages
@@ -257,7 +256,7 @@ ENV PATH="/usr/lib/afni/bin:$PATH" \
     AFNI_PLUGINPATH="/usr/lib/afni/plugins"
 
 ##################################################################
-# Setting FSL envvars
+# Setting FSL envvars ### TO BE UPDATED???
 ##################################################################
 ENV FSLDIR="/usr/share/fsl/5.0" \
     FSLOUTPUTTYPE="NIFTI_GZ" \
@@ -355,7 +354,7 @@ LABEL org.label-schema.build-date=${BUILD_DATE} \
       org.label-schema.vcs-ref=${VCS_REF} \
       org.label-schema.vcs-url="https://github.com/connectomicslab/connectomemapper3" \
       org.label-schema.version=$VERSION \
-      org.label-schema.maintainer="Sebastien Tourbier <sebastien.tourbier@alumni.epfl.ch>" \
+      org.label-schema.maintainer="Emeline Mullier <emeline.mullier@chuv.ch>" \
       org.label-schema.vendor="Connectomics Lab, Centre Hospitalier Universitaire Vaudois (CHUV), Lausanne, Switzerland" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.docker.cmd="docker run --rm -v ~/data/bids_dataset:/bids_dir -t sebastientourbier/connectomemapper-bidsapp:${VERSION} /bids_dir /bids_dir/derivatives participant [--participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]] [-session_label SESSION_LABEL [SESSION_LABEL ...]] [--anat_pipeline_config ANAT_PIPELINE_CONFIG] [--dwi_pipeline_config DWI_PIPELINE_CONFIG] [--func_pipeline_config FUNC_PIPELINE_CONFIG]  [--number_of_participants_processed_in_parallel NUMBER_OF_PARTICIPANTS_PROCESSED_IN_PARALLEL] [--fs_license FS_LICENSE]" \

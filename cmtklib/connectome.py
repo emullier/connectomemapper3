@@ -59,12 +59,14 @@ def compute_curvature_array(fib):
     return meancurv
 
 
+
 def create_endpoints_array(fib, voxelSize, print_info):
     """Create the endpoints arrays for each fiber.
 
     Parameters
     ----------
-    fib: the fibers data
+    fib: list of arrays
+        The fibers data. Each fiber should be a 2D array where rows represent 3D points.
 
     voxelSize: 3-tuple
         It contains the voxel size of the ROI image
@@ -76,7 +78,7 @@ def create_endpoints_array(fib, voxelSize, print_info):
     -------
     (endpoints: matrix of size [#fibers, 2, 3] containing for each fiber the
                index of its first and last point in the voxelSize volume
-    endpointsmm) : endpoints in milimeter coordinates
+    endpointsmm) : endpoints in millimeter coordinates
 
     """
     if print_info:
@@ -99,19 +101,20 @@ def create_endpoints_array(fib, voxelSize, print_info):
                 pc = pcN
                 print("%4.0f%%" % pc)
 
-        f = fi[0]
+        # Ensure fi is a 2D array; otherwise, expand dimensions
+        if fi.ndim == 1:
+            fi = np.expand_dims(fi, axis=0)
+        elif fi.ndim != 2:
+            raise ValueError(f"Unexpected dimensionality for fiber {i}: {fi.ndim}")
 
-        # store startpoint
-        endpoints[i, 0, :] = f[0, :]
-        # store endpoint
-        endpoints[i, 1, :] = f[-1, :]
+        if fi.shape[0] < 2:
+            raise ValueError(f"Fiber {i} does not have enough points to determine endpoints")
 
-        # store startpoint
-        endpointsmm[i, 0, :] = f[0, :]
-        # store endpoint
-        endpointsmm[i, 1, :] = f[-1, :]
-
-        # print 'endpoints (mm) : ',endpoints[i, 0, :],' ; ',endpoints[i, 1, :]
+        # Store start and endpoint
+        endpoints[i, 0, :] = fi[0, :]
+        endpoints[i, 1, :] = fi[-1, :]
+        endpointsmm[i, 0, :] = fi[0, :]
+        endpointsmm[i, 1, :] = fi[-1, :]
 
         # Translate from mm to index
         endpoints[i, 0, 0] = int(endpoints[i, 0, 0] / float(voxelSize[0]))
@@ -120,8 +123,6 @@ def create_endpoints_array(fib, voxelSize, print_info):
         endpoints[i, 1, 0] = int(endpoints[i, 1, 0] / float(voxelSize[0]))
         endpoints[i, 1, 1] = int(endpoints[i, 1, 1] / float(voxelSize[1]))
         endpoints[i, 1, 2] = int(endpoints[i, 1, 2] / float(voxelSize[2]))
-
-        # print 'endpoints : ',endpoints[i, 0, :],' ; ',endpoints[i, 1, :]
 
     # Return the matrices
     return endpoints, endpointsmm
@@ -155,7 +156,10 @@ def save_fibers(oldhdr, oldfib, fname, indices):
     hdrnew["n_count"] = n_fib_out
 
     print("Writing final no orphan fibers: %s" % fname)
-    nib.trackvis.write(fname, outstreams, hdrnew)
+    tractogram = nib.streamlines.Tractogram(outstreams, affine_to_rasmm=np.eye(4))
+    trk_file = nib.streamlines.TrkFile(tractogram, header=hdrnew)
+    
+    trk_file.save(fname)
 
 
 def cmat(
@@ -213,9 +217,10 @@ def cmat(
     en_fnamemm = "endpointsmm.npy"
     curv_fname = "meancurvature.npy"
 
-    fib, hdr = nib.trackvis.read(intrk, False)
-    n = len(fib)  # number of fibers
-
+    trk_file = nib.streamlines.TrkFile.load(intrk)
+    fib = trk_file.streamlines
+    hdr = trk_file.header
+    n = len(fib)  # number of fibersk
     if parcellation_scheme != "Custom":
         if parcellation_scheme != "Lausanne2018":
             resolutions = get_parcellation(parcellation_scheme)
@@ -229,7 +234,7 @@ def cmat(
                         roi_graphml_fname = graphml
 
                 roi = nib.load(roi_fname)
-                roiData = roi.get_data()
+                roiData = roi.get_fdata()
                 resolutions[parkey]["number_of_regions"] = roiData.max()
                 resolutions[parkey]["node_information_graphml"] = op.abspath(
                     roi_graphml_fname
@@ -248,7 +253,8 @@ def cmat(
     # what it should be
     firstROIFile = roi_volumes[0]
     firstROI = nib.load(firstROIFile)
-    roiVoxelSize = firstROI.get_header().get_zooms()
+    roiVoxelSize = firstROI.header.get_zooms()
+
 
     (endpoints, endpointsmm) = create_endpoints_array(fib, roiVoxelSize, True)
     np.save(en_fname, endpoints)
@@ -277,7 +283,7 @@ def cmat(
             if (parkey in vol) or (len(roi_volumes) == 1):
                 roi_fname = vol
         roi = nib.load(roi_fname)
-        roiData = roi.get_data()
+        roiData = roi.get_fdata()
 
         # Create the matrix
         print(
@@ -326,11 +332,11 @@ def cmat(
         for k, v in list(mmap.items()):
             print("     - %s map" % k)
             da = nib.load(v)
-            mdata = da.get_data()
+            mdata = da.get_fdata()
             print(mdata.max())
             mdata = np.nan_to_num(mdata)
             print(mdata.max())
-            mmapdata[k] = (mdata, da.get_header().get_zooms())
+            mmapdata[k] = (mdata, da.header.get_zooms())
 
         print("  ************************")
         print("  >> Processing fibers and computing metrics (%s fibers)" % n)
@@ -414,8 +420,16 @@ def cmat(
         # create a final fiber length array
         finalfiberlength = []
         for idx in final_fibers_idx:
-            # compute length of fiber
-            finalfiberlength.append(length(fib[idx][0]))
+            fiber_segment = fib[idx][0]
+
+            if fiber_segment.ndim == 1:
+        # Expand the dimension if it's 1D
+                fiber_segment = np.expand_dims(fiber_segment, axis=0)
+            elif fiber_segment.ndim != 2:
+                raise ValueError(f"Unexpected dimensionality for fiber segment: {fiber_segment.ndim}")
+
+# Now pass the correctly shaped fiber segment to the length function
+            finalfiberlength.append(length(fiber_segment))
 
         # convert to array
         final_fiberlength_array = np.array(finalfiberlength)

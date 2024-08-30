@@ -1,0 +1,49 @@
+Node: anatomical_pipeline.parcellation_stage.compute_roi_volumetry
+Working directory: /home/localadmin/DATA/ds-sample/derivatives/nipype-1.8.5/sub-01/ses-01/anatomical_pipeline/parcellation_stage/compute_roi_volumetry
+
+Node inputs:
+
+parcellation_scheme = Lausanne2018
+roi_graphMLs = <undefined>
+roi_volumes = <undefined>
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/nipype/pipeline/plugins/multiproc.py", line 67, in run_node
+    result["result"] = node.run(updatehash=updatehash)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/nipype/pipeline/engine/nodes.py", line 527, in run
+    result = self._run_interface(execute=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/nipype/pipeline/engine/nodes.py", line 645, in _run_interface
+    return self._run_command(execute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/nipype/pipeline/engine/nodes.py", line 771, in _run_command
+    raise NodeExecutionError(msg)
+nipype.pipeline.engine.nodes.NodeExecutionError: Exception raised while executing Node compute_roi_volumetry.
+
+Traceback:
+	Traceback (most recent call last):
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/nipype/interfaces/base/core.py", line 398, in run
+	    runtime = self._run_interface(runtime)
+	              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/connectomemapper-3.2.0-py3.12.egg/cmtklib/parcellation.py", line 130, in _run_interface
+	    self._compute_and_save_volumetry(roi_fname, roi_info_graphml, parkey)
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/connectomemapper-3.2.0-py3.12.egg/cmtklib/parcellation.py", line 164, in _compute_and_save_volumetry
+	    gp = nx.read_graphml(roi_info_graphml)
+	         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/networkx/utils/decorators.py", line 816, in func
+	    return argmap._lazy_compile(__wrapper)(*args, **kwargs)
+	           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	  File "<class 'networkx.utils.decorators.argmap'> compilation 9", line 5, in argmap_read_graphml_5
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/networkx/readwrite/graphml.py", line 294, in read_graphml
+	    reader = GraphMLReader(node_type, edge_key_type, force_multigraph)
+	             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/networkx/readwrite/graphml.py", line 842, in __init__
+	    self.construct_types()
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/networkx/readwrite/graphml.py", line 417, in construct_types
+	    (np.float_, "float"),
+	     ^^^^^^^^^
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.12/site-packages/numpy/__init__.py", line 400, in __getattr__
+	    raise AttributeError(
+	AttributeError: `np.float_` was removed in the NumPy 2.0 release. Use `np.float64` instead.
+

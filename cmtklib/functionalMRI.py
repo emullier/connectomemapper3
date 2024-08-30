@@ -49,14 +49,14 @@ class DiscardTP(BaseInterface):
 
     def _run_interface(self, runtime):
         dataimg = nib.load(self.inputs.in_file)
-        data = dataimg.get_data()
+        data = dataimg.get_fdata()
 
         n_discard = int(self.inputs.n_discard) - 1
 
         new_data = data.copy()
         new_data = new_data[:, :, :, n_discard:-1]
 
-        hd = dataimg.get_header()
+        hd = dataimg.header
         hd.set_data_shape(
             [
                 hd.get_data_shape()[0],
@@ -65,7 +65,7 @@ class DiscardTP(BaseInterface):
                 hd.get_data_shape()[3] - n_discard - 1,
             ]
         )
-        img = nib.Nifti1Image(new_data, dataimg.get_affine(), hd)
+        img = nib.Nifti1Image(new_data, affine=dataimg.affine, header=hd)
         nib.save(img, os.path.abspath("fMRI_discard.nii.gz"))
         return runtime
 
@@ -157,11 +157,11 @@ class NuisanceRegression(BaseInterface):
 
         # Extract whole brain average signal
         dataimg = nib.load(ref_path)
-        data = dataimg.get_data()
+        data = dataimg.get_fdata()
         tp = data.shape[3]
         if self.inputs.global_nuisance:
             brainfile = self.inputs.brainfile  # load eroded whole brain mask
-            brain = nib.load(brainfile).get_data().astype(np.uint32)
+            brain = nib.load(brainfile).get_fdata().astype(np.uint32)
             global_values = data[brain == 1].mean(axis=0)
             global_values = global_values - np.mean(global_values)
             np.save(os.path.abspath("averageGlobal.npy"), global_values)
@@ -172,7 +172,7 @@ class NuisanceRegression(BaseInterface):
         # Extract CSF average signal
         if self.inputs.csf_nuisance:
             csffile = self.inputs.csf_file  # load eroded CSF mask
-            csf = nib.load(csffile).get_data().astype(np.uint32)
+            csf = nib.load(csffile).get_fdata().astype(np.uint32)
             csf_values = data[csf == 1].mean(axis=0)
             csf_values = csf_values - np.mean(csf_values)
             np.save(os.path.abspath("averageCSF.npy"), csf_values)
@@ -181,7 +181,7 @@ class NuisanceRegression(BaseInterface):
         # Extract WM average signal
         if self.inputs.wm_nuisance:
             WMfile = self.inputs.wm_file  # load eroded WM mask
-            WM = nib.load(WMfile).get_data().astype(np.uint32)
+            WM = nib.load(WMfile).get_fdata().astype(np.uint32)
             wm_values = data[WM == 1].mean(axis=0)
             wm_values = wm_values - np.mean(wm_values)
             np.save(os.path.abspath("averageWM.npy"), wm_values)
@@ -226,7 +226,7 @@ class NuisanceRegression(BaseInterface):
 
         # s = gconf.parcellation.keys()[0]
 
-        gm = nib.load(self.inputs.gm_file[0]).get_data().astype(np.uint32)
+        gm = nib.load(self.inputs.gm_file[0]).get_fdata().astype(np.uint32)
         # if float(self.inputs.n_discard) > 0:
         #     n_discard = int(self.inputs.n_discard) - 1
         #     if self.inputs.motion_nuisance:
@@ -301,7 +301,7 @@ class NuisanceRegression(BaseInterface):
                 index[0], index[1], index[2], :
             ] = gls_results.resid  # + gls_results.params[8]
 
-        img = nib.Nifti1Image(new_data, dataimg.get_affine(), dataimg.get_header())
+        img = nib.Nifti1Image(new_data, affine=dataimg.affine, header=dataimg.header)
         nib.save(img, os.path.abspath("fMRI_nuisance.nii.gz"))
 
         return runtime
@@ -366,12 +366,12 @@ class Detrending(BaseInterface):
 
         # Load data
         dataimg = nib.load(ref_path)
-        data = dataimg.get_data()
+        data = dataimg.get_fdata()
         tp = data.shape[3]
 
         # GLM: regress out nuisance covariates
         new_data_det = data.copy()
-        gm = nib.load(self.inputs.gm_file[0]).get_data().astype(np.uint32)
+        gm = nib.load(self.inputs.gm_file[0]).get_fdata().astype(np.uint32)
 
         from scipy import signal
 
@@ -384,7 +384,7 @@ class Detrending(BaseInterface):
             )
             new_data_det[index[0], index[1], index[2], :] = Ydet[:, 0]
 
-        img = nib.Nifti1Image(new_data_det, dataimg.get_affine(), dataimg.get_header())
+        img = nib.Nifti1Image(new_data_det, affine=dataimg.affine, header=dataimg.header)
         nib.save(img, os.path.abspath("fMRI_detrending.nii.gz"))
 
         if self.inputs.mode == "quadratic":
@@ -402,7 +402,7 @@ class Detrending(BaseInterface):
                 )
 
             img = nib.Nifti1Image(
-                new_data_det2, dataimg.get_affine(), dataimg.get_header()
+                new_data_det2, affine=dataimg.affine, header=dataimg.header
             )
             nib.save(img, os.path.abspath("fMRI_detrending.nii.gz"))
 
@@ -419,7 +419,7 @@ class Detrending(BaseInterface):
                 Ydet = spline(new_data_det2[index[0], index[1], index[2], :], order=3)
 
             img = nib.Nifti1Image(
-                new_data_det2, dataimg.get_affine(), dataimg.get_header()
+                new_data_det2, affine = dataimg.affine, header = dataimg.header
             )
             nib.save(img, os.path.abspath("fMRI_detrending.nii.gz"))
 
@@ -489,11 +489,11 @@ class Scrubbing(BaseInterface):
         ref_path = self.inputs.in_file
 
         dataimg = nib.load(ref_path)
-        data = dataimg.get_data()
+        data = dataimg.get_fdata()
         tp = data.shape[3]
         WMfile = self.inputs.wm_mask
-        WM = nib.load(WMfile).get_data().astype(np.uint32)
-        GM = nib.load(self.inputs.gm_file[0]).get_data().astype(np.uint32)
+        WM = nib.load(WMfile).get_fdata().astype(np.uint32)
+        GM = nib.load(self.inputs.gm_file[0]).get_fdata().astype(np.uint32)
         mask = WM + GM
         move = np.genfromtxt(self.inputs.motion_parameters)
 

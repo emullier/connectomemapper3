@@ -136,7 +136,7 @@ class ComputeParcellationRoiVolumes(BaseInterface):
     def _compute_and_save_volumetry(self, roi_fname, roi_info_graphml, parkey):
         iflogger.info("  > Load {}...".format(roi_fname))
         roiImg = ni.load(roi_fname)
-        roiData = roiImg.get_data()
+        roiData = roiImg.get_fdata()
 
         # Compute the volume of the voxel
         voxel_dimX, voxel_dimY, voxel_dimZ = roiImg.header.get_zooms()
@@ -235,7 +235,7 @@ def erode_mask(fsdir, mask_file):
     # Erode mask
     print('    > Load mask {}'.format(mask_file))
     img = ni.load(mask_file)
-    mask = img.get_data()
+    mask = img.get_fdata()
 
     # Circumvent a casting issue for csf_mask which did not have element exactly equal to 1 (instead 0.999998....)
     mask[mask > 0] = 1
@@ -249,7 +249,7 @@ def erode_mask(fsdir, mask_file):
     print(er_mask.sum())
     er_mask = imerode(er_mask, se)
     print(er_mask.sum())
-    img = ni.Nifti1Image(er_mask, img.get_affine(), img.get_header())
+    img = ni.Nifti1Image(er_mask, affine=img.affine, header=img.header)
     out_fname = os.path.join(fsdir, 'mri',
                              '{}_eroded.nii.gz'.format(os.path.splitext(op.splitext(op.basename(mask_file))[0])[0]))
     print('    > Save eroded mask to: {}'.format(out_fname))
@@ -621,7 +621,7 @@ class CombineParcellations(BaseInterface):
         # Reading Subfields Images
         try:
             img_sublh = ni.load(self.inputs.lh_hippocampal_subfields)
-            img_data_sublh = img_sublh.get_data()
+            img_data_sublh = img_sublh.get_fdata()
             lh_subfield_defined = True
         except TypeError:
             print('Subfields image (Left hemisphere) not provided')
@@ -629,7 +629,7 @@ class CombineParcellations(BaseInterface):
         rh_subfield_defined = False
         try:
             img_subrh = ni.load(self.inputs.rh_hippocampal_subfields)
-            img_data_subrh = img_subrh.get_data()
+            img_data_subrh = img_subrh.get_fdata()
             rh_subfield_defined = True
         except TypeError:
             print('Subfields image (Right hemisphere) not provided')
@@ -638,7 +638,7 @@ class CombineParcellations(BaseInterface):
         # Reading  Nuclei
         try:
             Vthal = ni.load(self.inputs.thalamus_nuclei)
-            img_data_thal = Vthal.get_data()
+            img_data_thal = Vthal.get_fdata()
 
             thalamus_nuclei_defined = True
         except TypeError:
@@ -648,7 +648,7 @@ class CombineParcellations(BaseInterface):
         # Reading Stem Image
         try:
             img_stem = ni.load(self.inputs.brainstem_structures)
-            img_data_stem = img_stem.get_data()
+            img_data_stem = img_stem.get_fdata()
             indstem = np.where(img_data_stem > 0)
             brainstem_defined = True
         except TypeError:
@@ -681,17 +681,17 @@ class CombineParcellations(BaseInterface):
         # to get voxels of left and right hypothalamus
         iflogger.info("  > Create ventricule image")
         img_v = ni.load(roi1_fname)
-        img_data = img_v.get_data()
+        img_data = img_v.get_fdata()
         tmp = np.zeros(img_data.shape)
         ind_v = np.where(img_data == ventricle3)
         tmp[ind_v] = 1
 
         third_vent_fn = op.abspath('ventricle3.nii.gz')
-        hdr = img_v.get_header()
+        hdr = img_v.header
         hdr2 = hdr.copy()
         hdr2.set_data_dtype(np.int16)
         iflogger.info("    ... Image saved to {}".format(third_vent_fn))
-        img = ni.Nifti1Image(tmp, img_v.get_affine(), hdr2)
+        img = ni.Nifti1Image(tmp, affine=img_v.affine, header=hdr2)
         ni.save(img, third_vent_fn)
         del img
 
@@ -759,7 +759,7 @@ class CombineParcellations(BaseInterface):
 
             # Reading Cortical Parcellation
             img_v = ni.load(roi)
-            img_data = img_v.get_data()
+            img_data = img_v.get_fdata()
 
             # Replacing the brain stem (Stem is replaced by its own parcellation.
             # Mismatch between both global volumes, mainly due to partial volume
@@ -814,7 +814,7 @@ class CombineParcellations(BaseInterface):
 
             # Reading Cortical Parcellation
             img_v = ni.load(roi)
-            img_data = img_v.get_data()
+            img_data = img_v.get_fdata()
 
             # Replacing the brain stem (Stem is replaced by its own parcellation.
             # Mismatch between both global volumes, mainly due to partial volume
@@ -1462,11 +1462,11 @@ class CombineParcellations(BaseInterface):
             # Saving the new parcellation
             outprefix_name = Path(roi).name.split(".")[0]
             output_roi = op.abspath('{}_final.nii.gz'.format(outprefix_name))
-            hdr = img_v.get_header()
+            hdr = img_v.header
             hdr2 = hdr.copy()
             hdr2.set_data_dtype(np.int16)
             iflogger.info("  > Save output image to {}".format(output_roi))
-            img = ni.Nifti1Image(img_data_out, img_v.get_affine(), hdr2)
+            img = ni.Nifti1Image(img_data_out, affine=img_v.affine, header=hdr2)
             ni.save(img, output_roi)
             del img
 
@@ -1504,7 +1504,7 @@ class CombineParcellations(BaseInterface):
             print(status)
 
         img_aparcaseg = ni.load(aparcaseg_native)
-        img_data_aparcaseg = img_aparcaseg.get_data()
+        img_data_aparcaseg = img_aparcaseg.get_fdata()
 
         # Refine aparc+aseg.mgz with new subcortical and/or structures (if any)
         if thalamus_nuclei_defined or brainstem_defined or (lh_subfield_defined and rh_subfield_defined):
@@ -1542,7 +1542,7 @@ class CombineParcellations(BaseInterface):
                 out_tmp = op.join(fs_dir, 'tmp', 'aparc-thal.lh.native.nii.gz')
                 iflogger.info("    ... Save tmp image to {}".format(out_tmp))
                 img_tmp = ni.Nifti1Image(
-                    tmp, img_aparcaseg.get_affine(), img_aparcaseg.get_header())
+                    tmp, affine=img_aparcaseg.affine, header=img_aparcaseg.header)
                 ni.save(img_tmp, out_tmp)
 
                 mask_thal_rh = np.zeros(img_data_aparcaseg.shape)
@@ -1563,7 +1563,7 @@ class CombineParcellations(BaseInterface):
                 out_tmp = op.join(fs_dir, 'tmp', 'aparc-thal.rh.native.nii.gz')
                 iflogger.info("    ... Save tmp image to {}".format(out_tmp))
                 img_tmp = ni.Nifti1Image(
-                    tmp, img_aparcaseg.get_affine(), img_aparcaseg.get_header())
+                    tmp, affine=img_aparcaseg.affine, header=img_aparcaseg.header)
                 ni.save(img_tmp, out_tmp)
 
             # Brainstem (aparc+aseg labels: 16)
@@ -1578,7 +1578,7 @@ class CombineParcellations(BaseInterface):
             iflogger.info("    ... Save relabeled image to {}".format(
                 new_aparcaseg_native))
             img = ni.Nifti1Image(
-                img_data_aparcaseg_new, img_aparcaseg.get_affine(), img_aparcaseg.get_header())
+                img_data_aparcaseg_new, affine=img_aparcaseg.affine, header=img_aparcaseg.header)
             ni.save(img, new_aparcaseg_native)
             del img
 
@@ -1591,7 +1591,7 @@ class CombineParcellations(BaseInterface):
             iflogger.info(
                 "    ... Save relabeled image to {}".format(aparcaseg_native))
             img = ni.Nifti1Image(
-                img_data_aparcaseg, img_aparcaseg.get_affine(), img_aparcaseg.get_header())
+                img_data_aparcaseg, affine=img_aparcaseg.affine, header=img_aparcaseg.header)
             ni.save(img, aparcaseg_native)
             del img
 
@@ -1706,8 +1706,8 @@ class ParcellateThalamus(BaseInterface):
         # Load aparc+aseg file in native space
         atlas_fn = out
         img_atlas = ni.load(atlas_fn)
-        img_data_atlas = img_atlas.get_data()
-        hdr = img_atlas.get_header()
+        img_data_atlas = img_atlas.get_fdata()
+        hdr = img_atlas.header
         hdr2 = hdr.copy()
         hdr2.set_data_dtype(np.uint16)
 
@@ -1762,11 +1762,11 @@ class ParcellateThalamus(BaseInterface):
 
         iflogger.info('Correcting the volumes after the interpolation ')
         # Load jacobian file
-        img_data_jacob = ni.load(jacobian_file).get_data()  # numpy.ndarray
+        img_data_jacob = ni.load(jacobian_file).get_fdata()  # numpy.ndarray
 
         # Load probability maps in native space after applying estimated transform and deformation
         img_spams = ni.load(output_maps)
-        img_data_vspams = img_spams.get_data()  # numpy.ndarray
+        img_data_vspams = img_spams.get_fdata()  # numpy.ndarray
         img_data_vspams[img_data_vspams < 0] = 0
         img_data_vspams[img_data_vspams > 1] = 1
 
@@ -1783,7 +1783,7 @@ class ParcellateThalamus(BaseInterface):
 
         debug_file = op.abspath('{}_class-thalamus_dtissue_after_ants.nii.gz'.format(outprefix_name))
         print("Save output image to %s" % debug_file)
-        img = ni.Nifti1Image(max_prob, img_atlas.get_affine(), hdr2)
+        img = ni.Nifti1Image(max_prob, affine=img_atlas.affine, header=hdr2)
         ni.save(img, debug_file)
         del img
 
@@ -1804,7 +1804,7 @@ class ParcellateThalamus(BaseInterface):
 
         debug_file = op.abspath('{}_class-thalamus_dtissue_after_jacobiancorr.nii.gz'.format(outprefix_name))
         print("Save output image to %s" % debug_file)
-        img = ni.Nifti1Image(max_prob, img_atlas.get_affine(), hdr2)
+        img = ni.Nifti1Image(max_prob, affine=img_atlas.affine, header=hdr2)
         ni.save(img, debug_file)
         del img
 
@@ -1872,11 +1872,11 @@ class ParcellateThalamus(BaseInterface):
 
         # update the header and save thalamus mask
         thalamus_mask = op.abspath('{}_class-thalamus_dtissue.nii.gz'.format(outprefix_name))
-        hdr = img_atlas.get_header()
+        hdr = img_atlas.header
         hdr2 = hdr.copy()
         hdr2.set_data_dtype(np.uint16)
         print("Save output image to %s" % thalamus_mask)
-        img_thal = ni.Nifti1Image(img_data_thal, img_atlas.get_affine(), hdr2)
+        img_thal = ni.Nifti1Image(img_data_thal, affine=img_atlas.affine, header=hdr2)
         ni.save(img_thal, thalamus_mask)
 
         del hdr, hdr2, img_thal
@@ -1942,11 +1942,11 @@ class ParcellateThalamus(BaseInterface):
 
         # Save corrected probability maps of thalamic nuclei
         # update the header
-        hdr = img_spams.get_header()
+        hdr = img_spams.header
         hdr2 = hdr.copy()
         hdr2.set_data_dtype(np.uint16)
         print("Save output image to %s" % output_maps)
-        img = ni.Nifti1Image(img_data_spams, img_spams.get_affine(), hdr2)
+        img = ni.Nifti1Image(img_data_spams, affine=img_spams.affine, header=hdr2)
         ni.save(img, output_maps)
 
         del hdr, img, img_spams
@@ -1954,7 +1954,7 @@ class ParcellateThalamus(BaseInterface):
         # Save Maxprob
         # update the header
         max_prob_fn = op.abspath('{}_class-thalamus_probtissue_maxprob.nii.gz'.format(outprefix_name))
-        hdr = img_atlas.get_header()
+        hdr = img_atlas.header
         hdr2 = hdr.copy()
         hdr2.set_data_dtype(np.uint16)
 
@@ -1971,7 +1971,7 @@ class ParcellateThalamus(BaseInterface):
         del img_data_spams
 
         print("Save output image to %s" % max_prob)
-        img = ni.Nifti1Image(max_prob, img_atlas.get_affine(), hdr2)
+        img = ni.Nifti1Image(max_prob, affine=img_atlas.affine, header=hdr2)
         ni.save(img, max_prob_fn)
 
         del hdr2, img, max_prob
@@ -2369,7 +2369,7 @@ def create_roi(subject_id, subjects_dir, v=True):
 
     # # load aseg volume
     aseg = ni.load(op.join(subject_dir, 'mri', 'aseg.nii.gz'))
-    asegd = aseg.get_data()  # numpy.ndarray
+    asegd = aseg.get_fdata()  # numpy.ndarray
 
     # identify cortical voxels, right (3) and left (42) hemispheres
     idxr = np.where(asegd == 3)
@@ -2470,7 +2470,7 @@ def create_roi(subject_id, subjects_dir, v=True):
             print('     > relabel cortical and subcortical regions'
                   ' for consistency between resolutions')
         this_nifti = ni.load(os.path.join(subject_dir, 'tmp', rois_output[i]))
-        vol = this_nifti.get_data()  # numpy.ndarray
+        vol = this_nifti.get_fdata()  # numpy.ndarray
         hdr = this_nifti.header
         # Initialize output
         hdr2 = hdr.copy()
@@ -2516,7 +2516,7 @@ def create_roi(subject_id, subjects_dir, v=True):
         if v:  # pragma: no cover
             print('     ... save output volumes')
         this_out = os.path.join(subject_dir, 'mri', rois_output[i])
-        img = ni.Nifti1Image(newrois, this_nifti.affine, hdr2)
+        img = ni.Nifti1Image(newrois, this_nifti.affine, header=hdr2)
         ni.save(img, this_out)
         del img
 
@@ -2543,7 +2543,7 @@ def create_roi(subject_id, subjects_dir, v=True):
         if v:  # pragma: no cover
             print('     ... save output volumes ')
         this_out = os.path.join(subject_dir, 'mri', roivs_output[i])
-        img = ni.Nifti1Image(newrois, this_nifti.affine, hdr2)
+        img = ni.Nifti1Image(newrois, this_nifti.affine, header=hdr2)
         ni.save(img, this_out)
         del img
 
@@ -2566,7 +2566,7 @@ def create_roi(subject_id, subjects_dir, v=True):
             gmMask[gmMask > 0] = 1
             out_mask = op.join(subject_dir, 'mri', 'gmmask.nii.gz')
             print("         Save gray matter mask to %s" % out_mask)
-            img = ni.Nifti1Image(gmMask, this_nifti.affine, hdr2)
+            img = ni.Nifti1Image(gmMask, this_nifti.affine, header=hdr2)
             ni.save(img, out_mask)
             del img
 
@@ -2604,9 +2604,9 @@ def create_wm_mask(subject_id, subjects_dir, v=True):
     if v:  # pragma: no cover
         iflogger.info("    > load ribbon")
     fsmask = ni.load(op.join(fs_dir, 'mri', 'ribbon.nii.gz'))
-    fsmaskd = fsmask.get_data()
+    fsmaskd = fsmask.get_fdata()
 
-    wmmask = np.zeros(fsmask.get_data().shape)
+    wmmask = np.zeros(fsmask.get_fdata().shape)
 
     # these data is stored and could be extracted from fs_dir/stats/aseg.txt
 
@@ -2631,7 +2631,7 @@ def create_wm_mask(subject_id, subjects_dir, v=True):
     if v:  # pragma: no cover
         iflogger.info("     > Load aseg")
     aseg = ni.load(op.join(fs_dir, 'mri', 'aseg.nii.gz'))
-    asegd = aseg.get_data()
+    asegd = aseg.get_fdata()
 
     try:
         import scipy.ndimage.morphology as nd
@@ -2671,7 +2671,7 @@ def create_wm_mask(subject_id, subjects_dir, v=True):
 
     if v:  # pragma: no cover
         iflogger.info("    > Save CSF mask")
-    img = ni.Nifti1Image(csfA, aseg.get_affine(), aseg.get_header())
+    img = ni.Nifti1Image(csfA, affine=aseg.affine, header=aseg.header)
     ni.save(img, op.join(fs_dir, 'mri', 'csf_mask.nii.gz'))
     del img
 
@@ -2744,7 +2744,7 @@ def create_wm_mask(subject_id, subjects_dir, v=True):
 
     # ADD voxels from 'cc_unknown.nii.gz' dataset
     # ccun = ni.load(op.join(fs_dir, 'label', 'cc_unknown.nii.gz'))
-    # ccund = ccun.get_data()
+    # ccund = ccun.get_fdata()
     # idx = np.where(ccund != 0)
     # iflogger.info("Add corpus callosum and unknown to wm mask")
     # wmmask[idx] = 1
@@ -2760,7 +2760,7 @@ def create_wm_mask(subject_id, subjects_dir, v=True):
 
     # output white matter mask. crop and move it afterwards
     wm_out = op.join(fs_dir, 'mri', 'fsmask_1mm.nii.gz')
-    img = ni.Nifti1Image(wmmask, fsmask.get_affine(), fsmask.get_header())
+    img = ni.Nifti1Image(wmmask, affine=fsmask.affine, header=fsmask.header)
     if v:  # pragma: no cover
         iflogger.info("    > Save white matter mask: %s" % wm_out)
     ni.save(img, wm_out)
@@ -2883,7 +2883,7 @@ def generate_WM_and_GM_mask(subject_id, subjects_dir):
 
     fout = op.join(fs_dir, 'mri', 'aparc+aseg.nii.gz')
     nii_apar_cimg = ni.load(fout)
-    nii_apar_cdata = nii_apar_cimg.get_data()
+    nii_apar_cdata = nii_apar_cimg.get_fdata()
 
     # mri_convert aparc+aseg.mgz aparc+aseg.nii.gz
     wm_out = op.join(fs_dir, 'mri', 'fsmask_1mm.nii.gz')
@@ -2950,8 +2950,8 @@ def generate_WM_and_GM_mask(subject_id, subjects_dir):
     #    for i in SUBCORTICAL[1]:
     #         nii_wm[nii_apar_cdata == i] = 1
 
-    img = ni.Nifti1Image(nii_wm, nii_apar_cimg.get_affine(),
-                         nii_apar_cimg.get_header())
+    img = ni.Nifti1Image(nii_wm, affine=nii_apar_cimg.affine,
+                         header=nii_apar_cimg.header)
     print("Save to: " + wm_out)
     ni.save(img, wm_out)
     del img
@@ -2982,8 +2982,8 @@ def generate_WM_and_GM_mask(subject_id, subjects_dir):
         #            nii_gm[ nii_apar_cdata == i ] = OTHER[2][idx]
 
         print("Save to: " + gm_out)
-        img = ni.Nifti1Image(nii_gm, nii_apar_cimg.get_affine(),
-                             nii_apar_cimg.get_header())
+        img = ni.Nifti1Image(nii_gm, affine=nii_apar_cimg.affine,
+                             header=nii_apar_cimg.header)
         ni.save(img, gm_out)
         del img
 
@@ -2996,7 +2996,7 @@ def generate_WM_and_GM_mask(subject_id, subjects_dir):
 
         print("GM mask saved to: " + gm_maskout)
         img = ni.Nifti1Image(
-            nii_gm_mask, nii_apar_cimg.get_affine(), nii_apar_cimg.get_header())
+            nii_gm_mask, affine=nii_apar_cimg.affine, header=nii_apar_cimg.header)
         ni.save(img, gm_maskout)
         del img
 
@@ -3006,7 +3006,7 @@ def generate_WM_and_GM_mask(subject_id, subjects_dir):
     subprocess.check_call(mri_cmd)
 
     asegfile = op.join(fs_dir, 'mri', 'aseg.nii.gz')
-    aseg = ni.load(asegfile).get_data().astype(np.uint32)
+    aseg = ni.load(asegfile).get_fdata().astype(np.uint32)
     idx = np.where((aseg == 4) |
                    (aseg == 43) |
                    (aseg == 11) |
@@ -3017,8 +3017,8 @@ def generate_WM_and_GM_mask(subject_id, subjects_dir):
                    (aseg == 49))
     er_mask = np.zeros(aseg.shape)
     er_mask[idx] = 1
-    img = ni.Nifti1Image(er_mask, ni.load(
-        asegfile).get_affine(), ni.load(asegfile).get_header())
+    aseg_img = ni.load(asegfile)
+    img = ni.Nifti1Image(er_mask, affine=aseg_img.affine, header=aseg_img.header)
     ni.save(img, op.join(fs_dir, 'mri', 'csf_mask.nii.gz'))
     del img
 

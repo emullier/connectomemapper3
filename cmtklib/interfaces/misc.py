@@ -40,7 +40,7 @@ class ExtractHeaderVoxel2WorldMatrix(BaseInterface):
 
     def _run_interface(self, runtime):
         im = nib.load(self.inputs.in_file)
-        transform = np.array(im.get_affine())
+        transform = np.array(im.affine)
 
         with open(os.path.abspath('voxel2world.txt'), 'a') as out_f:
             np.savetxt(out_f, transform, delimiter=' ', fmt="%6.6g")

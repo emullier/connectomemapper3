@@ -2188,7 +2188,10 @@ workflows:
           filters:
             # ignore any commit on any branch by default
             branches:
-              only: master
+              ignore: /.*/
+              #only: master
+            tags:
+              only: /^v.*/
 
       - deploy_singularity_release:
           requires:
