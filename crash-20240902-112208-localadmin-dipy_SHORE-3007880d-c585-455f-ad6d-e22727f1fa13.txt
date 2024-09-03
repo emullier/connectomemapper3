@@ -1,0 +1,44 @@
+Node: diffusion_pipeline.diffusion_stage.reconstruction.dipy_SHORE
+Working directory: /home/localadmin/DATA/ds-sample/derivatives/nipype-1.8.5/sub-01/ses-01/diffusion_pipeline/diffusion_stage/reconstruction/dipy_SHORE
+
+Node inputs:
+
+b0_thres = 700
+constrain_e0 = False
+in_bval = <undefined>
+in_bvec = <undefined>
+in_file = <undefined>
+in_mask = <undefined>
+lambda_l = 1e-08
+lambda_n = 1e-08
+out_prefix = <undefined>
+positive_constraint = True
+radial_order = 4
+response = <undefined>
+tau = 0.0441759
+tracking_processing_tool = mrtrix
+zeta = 700
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.11/site-packages/nipype/pipeline/plugins/multiproc.py", line 67, in run_node
+    result["result"] = node.run(updatehash=updatehash)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.11/site-packages/nipype/pipeline/engine/nodes.py", line 527, in run
+    result = self._run_interface(execute=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.11/site-packages/nipype/pipeline/engine/nodes.py", line 645, in _run_interface
+    return self._run_command(execute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.11/site-packages/nipype/pipeline/engine/nodes.py", line 771, in _run_command
+    raise NodeExecutionError(msg)
+nipype.pipeline.engine.nodes.NodeExecutionError: Exception raised while executing Node dipy_SHORE.
+
+Traceback:
+	Traceback (most recent call last):
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.11/site-packages/nipype/interfaces/base/core.py", line 398, in run
+	    runtime = self._run_interface(runtime)
+	              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	  File "/opt/anaconda3/envs/cmp_updPack/lib/python3.11/site-packages/connectomemapper-3.2.0-py3.11.egg/cmtklib/interfaces/dipy.py", line 410, in _run_interface
+	    from dipy.data import get_sphere
+	ModuleNotFoundError: No module named 'dipy'
+

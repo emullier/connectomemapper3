@@ -324,7 +324,7 @@ def cmat(
 
         # Prepare: compute the measures
         t = [c[0] for c in fib]
-        h = np.array(t, dtype=np.object)
+        h = np.array(t, dtype=object)
 
         mmap = additional_maps
         mmapdata = {}
@@ -351,14 +351,14 @@ def cmat(
             # ROI start => ROI end
             try:
                 startvox = np.zeros((3, 1)).astype(int)
-                startvox[0] = np.int(endpoints[i, 0, 0])
-                startvox[1] = np.int(endpoints[i, 0, 1])
-                startvox[2] = np.int(endpoints[i, 0, 2])
+                startvox[0] = int(endpoints[i, 0, 0])
+                startvox[1] = int(endpoints[i, 0, 1])
+                startvox[2] = int(endpoints[i, 0, 2])
 
                 endvox = np.zeros((3, 1)).astype(int)
-                endvox[0] = np.int(endpoints[i, 1, 0])
-                endvox[1] = np.int(endpoints[i, 1, 1])
-                endvox[2] = np.int(endpoints[i, 1, 2])
+                endvox[0] = int(endpoints[i, 1, 0])
+                endvox[1] = int(endpoints[i, 1, 1])
+                endvox[2] = int(endpoints[i, 1, 2])
 
                 # Endpoints from create_endpoints_array
                 startROI = int(roiData[startvox[0], startvox[1], startvox[2]])
@@ -616,7 +616,7 @@ def cmat(
                 if node_key == "dn_position":
                     node_arr = np.zeros([size_nodes, 3], dtype=np.float)
                 else:
-                    node_arr = np.zeros(size_nodes, dtype=np.object_)
+                    node_arr = np.zeros(size_nodes, dtype=object)
 
                 node_n = 0
                 for _, node_data in G_out.nodes(data=True):
@@ -1057,7 +1057,7 @@ class RsfmriCmat(BaseInterface):
                     if node_key == "dn_position":
                         node_arr = np.zeros([size_nodes, 3], dtype=np.float)
                     else:
-                        node_arr = np.zeros(size_nodes, dtype=np.object_)
+                        node_arr = np.zeros(size_nodes, dtype=object)
                     node_n = 0
                     for _, node_data in G.nodes(data=True):
                         node_arr[node_n] = node_data[node_key]
