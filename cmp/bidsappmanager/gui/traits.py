@@ -16,18 +16,18 @@ class MultiSelectAdapter(TabularAdapter):
     # Titles and column names for each column of a table.
     # In this example, each table has only one column.
     columns = [("", "myvalue")]
-    width = 100
 
-    # Magically named trait which gives the display text of the column named
-    # 'myvalue'. This is done using a Traits Property and its getter:
-    myvalue_text = Property
+    # Set a default integer width for the column
+    width = int(100)  # This ensures width is explicitly set as an integer
+
+    # Property to format the display text in the 'myvalue' column
+    myvalue_text = Property()
 
     def _get_myvalue_text(self):
-        """The getter for Property 'myvalue_text'.
-
-        It simply takes the value of the corresponding item in the list
-        being displayed in this table. A more complicated example could
-        format the item before displaying it.
-        """
+        """Getter for Property 'myvalue_text', used to format the display text."""
         return f"sub-{self.item}"
+
+    def get_width(self, object, trait, row):
+        """Ensure the width returned is always an integer."""
+        return int(super().get_width(object, trait, row))  # Cast the width to int
 

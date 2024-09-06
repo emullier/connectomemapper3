@@ -12,8 +12,8 @@ import shutil
 
 from traits.api import *
 from traitsui.api import *
-from traitsui.qt4.extra.qt_view import QtView
-from pyface.ui.qt4.image_resource import ImageResource
+from traitsui.qt.extra.qt_view import QtView
+from pyface.ui.qt.image_resource import ImageResource
 
 # Own import
 from cmtklib.bids.io import __cmp_directory__, __nipype_directory__, __freesurfer_directory__

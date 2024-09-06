@@ -20,7 +20,7 @@ from traitsui.editors import EnumEditor
 from traitsui.group import VGroup, HGroup, Group
 from traitsui.include import Include
 from traitsui.item import Item, spring
-from traitsui.qt4.extra.qt_view import QtView
+from traitsui.qt.extra.qt_view import QtView
 from traitsui.view import View
 
 import cmp.project

@@ -12,7 +12,7 @@ import os
 import pkg_resources
 
 from pyface.api import ImageResource
-from traitsui.qt4.extra.qt_view import QtView
+from traitsui.qt.extra.qt_view import QtView
 from traitsui.api import *
 from traits.api import *
 
