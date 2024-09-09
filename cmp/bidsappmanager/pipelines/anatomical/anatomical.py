@@ -17,7 +17,6 @@ from pyface.ui.qt.image_resource import ImageResource
 
 # Own import
 from cmtklib.bids.io import __cmp_directory__, __nipype_directory__, __freesurfer_directory__
-from cmp.bidsappmanager.stages.segmentation.segmentation import SegmentationStageUI
 from cmp.bidsappmanager.stages.parcellation.parcellation import ParcellationStageUI
 from cmp.pipelines.anatomical.anatomical import (
     AnatomicalPipeline,
@@ -60,22 +59,6 @@ class AnatomicalPipelineUI(AnatomicalPipeline):
     view_mode = Enum("config_view", ["config_view", "inspect_outputs_view"])
 
     pipeline_group = VGroup(
-        HGroup(
-            spring,
-            UItem(
-                "segmentation",
-                style="custom",
-                width=222,
-                height=129,
-                resizable=False,
-                style_sheet=return_button_style_sheet(
-                    ImageResource("segmentation").absolute_path
-                ),
-            ),
-            spring,
-            show_labels=False,
-            label="",
-        ),
         # Item('parcellation',editor=CustomEditor(image=ImageResource('parcellation'))),show_labels=False),
         HGroup(
             spring,
@@ -123,12 +106,6 @@ class AnatomicalPipelineUI(AnatomicalPipeline):
             subject_session = ""
 
         self.stages = {
-            "Segmentation": SegmentationStageUI(
-                subject=self.subject,
-                session=subject_session,
-                bids_dir=project_info.base_directory,
-                output_dir=project_info.output_directory,
-            ),
             "Parcellation": ParcellationStageUI(
                 pipeline_mode="Diffusion",
                 subject=self.subject,
@@ -159,59 +136,7 @@ class AnatomicalPipelineUI(AnatomicalPipeline):
                     self.stages[stage].name,
                 )
 
-        self._init_and_add_listeners_to_stage_traits_ui(subject_id=subject_id)
 
-    def _init_and_add_listeners_to_stage_traits_ui(self, subject_id):
-        """Initialize and add listeners to traits that are shared between the pipeline and the different stages."""
-        self.stages["Segmentation"].config.freesurfer_subjects_dir = os.path.join(
-            self.output_directory, __freesurfer_directory__
-        )
-        self.stages["Segmentation"].config.freesurfer_subject_id = os.path.join(
-            self.output_directory, __freesurfer_directory__, subject_id
-        )
-
-        print(
-            'Freesurfer subjects directory: '
-            f'{self.stages["Segmentation"].config.freesurfer_subjects_dir}'
-        )
-
-        self.stages["Segmentation"].config.on_trait_change(
-            self._update_parcellation, "seg_tool"
-        )
-        self.stages["Parcellation"].config.on_trait_change(
-            self._update_segmentation, "parcellation_scheme"
-        )
-
-    def _update_parcellation(self):
-        """Update self.stages['Parcellation'].config.parcellation_scheme when ``seg_tool`` is updated."""
-        if self.stages["Segmentation"].config.seg_tool == "Custom segmentation":
-            self.stages["Parcellation"].config.parcellation_scheme = "Custom"
-            self.stages["Parcellation"].config.parcellation_scheme_editor = ["Custom"]
-        else:
-            self.stages["Parcellation"].config.parcellation_scheme = "Lausanne2018"
-            self.stages["Parcellation"].config.parcellation_scheme_editor = [
-                "NativeFreesurfer", "Lausanne2018", "Custom"
-            ]
-
-    def _update_segmentation(self):
-        """Update self.stages['Segmentation'].config.seg_tool when ``parcellation_scheme`` is updated."""
-        if self.stages["Parcellation"].config.parcellation_scheme == "Custom":
-            self.stages["Segmentation"].config.seg_tool = "Custom segmentation"
-        else:
-            self.stages["Segmentation"].config.seg_tool = "Freesurfer"
-
-    def _segmentation_fired(self, info):
-        """Method that displays the window for the segmentation stage.
-
-        The window changed accordingly to the value of ``view_mode`` to be
-        in configuration or quality inspection mode.
-
-        Parameters
-        -----------
-        info : traits.ui.Button
-            The segmentation button object
-        """
-        self.stages["Segmentation"].configure_traits(view=self.view_mode)
 
     def _parcellation_fired(self, info):
         """Method that displays the window for the parcellation stage.
@@ -309,180 +234,10 @@ class AnatomicalPipelineUI(AnatomicalPipeline):
                 parent=None,
             )
 
-        if self.stages["Parcellation"].config.parcellation_scheme == "Custom":
+        if self.stages["Parcellation"].config.parcellation_scheme == "Chimera":
             msg = ""
 
-            custom_parc_nii_available = True
-            custom_parc_tsv_available = True
-            custom_brainmask_available = True
-            custom_gm_mask_available = True
-            custom_wm_mask_available = True
-            custom_csf_mask_available = True
-            custom_aparcaseg_available = True
-            
-            # Add custom BIDS derivatives directories to the BIDSLayout
-            custom_derivatives_dirnames = [
-                self.stages["Parcellation"].config.custom_parcellation.get_toolbox_derivatives_dir(),
-                self.stages["Segmentation"].config.custom_brainmask.get_toolbox_derivatives_dir(),
-                self.stages["Segmentation"].config.custom_gm_mask.get_toolbox_derivatives_dir(),
-                self.stages["Segmentation"].config.custom_wm_mask.get_toolbox_derivatives_dir(),
-                self.stages["Segmentation"].config.custom_csf_mask.get_toolbox_derivatives_dir(),
-                self.stages["Segmentation"].config.custom_aparcaseg.get_toolbox_derivatives_dir()
-            ]
-            # Keep only unique custom derivatives to make the BIDSLayout happy
-            custom_derivatives_dirnames = list(set(custom_derivatives_dirnames))
-            for custom_derivatives_dirname in  custom_derivatives_dirnames:
-                if custom_derivatives_dirname not in layout.derivatives:
-                    print(f"    * Add custom_derivatives_dirname: {custom_derivatives_dirname}")
-                    layout.add_derivatives(os.path.join(self.base_directory, 'derivatives', custom_derivatives_dirname))
-
-            files = layout.get(
-                subject=subjid,
-                session=(None
-                         if self.global_conf.subject_session == ""
-                         else self.global_conf.subject_session.split("-")[1]),
-                suffix=self.stages["Parcellation"].config.custom_parcellation.suffix,
-                atlas=self.stages["Parcellation"].config.custom_parcellation.atlas,
-                resolution=self.stages["Parcellation"].config.custom_parcellation.resolution,
-                extension="nii.gz",
-            )
-            if len(files) > 0:
-                custom_parc_file = os.path.join(files[0].dirname, files[0].filename)
-            else:
-                custom_parc_file = "NotFound"
-                custom_parc_nii_available = False
-            print("... custom_parc_file : %s" % custom_parc_file)
-
-            files = layout.get(
-                subject=subjid,
-                session=(None
-                         if self.global_conf.subject_session == ""
-                         else self.global_conf.subject_session.split("-")[1]),
-                suffix=self.stages["Parcellation"].config.custom_parcellation.suffix,
-                extension="tsv",
-                atlas=self.stages["Parcellation"].config.custom_parcellation.atlas,
-                resolution=self.stages["Parcellation"].config.custom_parcellation.resolution,
-            )
-            if len(files) > 0:
-                custom_parc_tsv_file = os.path.join(files[0].dirname, files[0].filename)
-            else:
-                custom_parc_tsv_file = "NotFound"
-                msg += f'  * Custom parcellation ({self.stages["Parcellation"].config.custom_parcellation}) not found\n'
-                custom_parc_tsv_available = False
-            print("... custom_parc_tsv_file : %s" % custom_parc_tsv_file)
-
-            if not custom_parc_nii_available and not custom_parc_tsv_available:
-                valid_inputs = False
-
-            files = layout.get(
-                    subject=subjid,
-                    session=(None
-                             if self.global_conf.subject_session == ""
-                             else self.global_conf.subject_session.split("-")[1]),
-                    suffix=self.stages["Segmentation"].config.custom_brainmask.suffix,
-                    extension="nii.gz",
-                    desc=self.stages["Segmentation"].config.custom_brainmask.desc,
-            )
-            if len(files) > 0:
-                custom_brainmask_file = os.path.join(files[0].dirname, files[0].filename)
-            else:
-                custom_brainmask_file = "NotFound"
-                msg += f'  * Custom brain mask ({self.stages["Segmentation"].config.custom_brainmask}) not found\n'
-                custom_brainmask_available = False
-            print("... custom_brainmask_file : %s" % custom_brainmask_file)
-
-            if not custom_brainmask_available:
-                valid_inputs = False
-
-            files = layout.get(
-                subject=subjid,
-                session=(None
-                         if self.global_conf.subject_session == ""
-                         else self.global_conf.subject_session.split("-")[1]),
-                suffix=self.stages["Segmentation"].config.custom_gm_mask.suffix,
-                extension="nii.gz",
-                label=self.stages["Segmentation"].config.custom_gm_mask.label,
-            )
-            if len(files) > 0:
-                custom_gm_mask_file = os.path.join(files[0].dirname, files[0].filename)
-            else:
-                custom_gm_mask_file = "NotFound"
-                msg += f'  * Custom gray matter mask ({self.stages["Segmentation"].config.custom_gm_mask}) not found\n'
-                custom_gm_mask_available = False
-            print("... custom_gm_mask_file : %s" % custom_gm_mask_file)
-
-            if not custom_gm_mask_available:
-                valid_inputs = False
-
-            files = layout.get(
-                subject=subjid,
-                session=(None
-                         if self.global_conf.subject_session == ""
-                         else self.global_conf.subject_session.split("-")[1]),
-                suffix=self.stages["Segmentation"].config.custom_wm_mask.suffix,
-                extension="nii.gz",
-                label=self.stages["Segmentation"].config.custom_wm_mask.label,
-            )
-            if len(files) > 0:
-                custom_wm_mask_file = os.path.join(files[0].dirname, files[0].filename)
-            else:
-                custom_wm_mask_file = "NotFound"
-                msg += f'  * Custom white matter mask ({self.stages["Segmentation"].config.custom_wm_mask}) not found\n'
-                custom_wm_mask_available = False
-            print("... custom_wm_mask_file : %s" % custom_wm_mask_file)
-
-            if not custom_wm_mask_available:
-                valid_inputs = False
-
-            files = layout.get(
-                subject=subjid,
-                session=(None
-                         if self.global_conf.subject_session == ""
-                         else self.global_conf.subject_session.split("-")[1]),
-                suffix=self.stages["Segmentation"].config.custom_csf_mask.suffix,
-                extension="nii.gz",
-                label=self.stages["Segmentation"].config.custom_csf_mask.label,
-            )
-            if len(files) > 0:
-                custom_csf_mask_file = os.path.join(files[0].dirname, files[0].filename)
-            else:
-                custom_csf_mask_file = "NotFound"
-                msg += f'  * Custom CSF mask ({self.stages["Segmentation"].config.custom_csf_mask}) not found\n'
-                custom_csf_mask_available = False
-            print("... custom_csf_mask_file : %s" % custom_csf_mask_file)
-
-            if not custom_csf_mask_available:
-                valid_inputs = False
-
-            files = layout.get(
-                subject=subjid,
-                session=(None
-                         if self.global_conf.subject_session == ""
-                         else self.global_conf.subject_session.split("-")[1]),
-                suffix=self.stages["Segmentation"].config.custom_aparcaseg.suffix,
-                extension="nii.gz",
-                desc=self.stages["Segmentation"].config.custom_aparcaseg.desc,
-            )
-            if len(files) > 0:
-                custom_aparcaseg_file = os.path.join(files[0].dirname, files[0].filename)
-            else:
-                custom_aparcaseg_file = "NotFound"
-                msg += f'  * Custom Freesurfer\'s aparc+aseg ({self.stages["Segmentation"].config.custom_gm_mask}) not found\n'
-                custom_aparcaseg_available = False
-            print("... custom_aparcaseg_file : %s" % custom_aparcaseg_file)
-
-            if not custom_aparcaseg_available:
-                valid_inputs = False
-
-            if not valid_inputs:
-                error(
-                    message=f"Missing required custom inputs:\n{msg} Please see documentation for more details.",
-                    title="Error",
-                    buttons=["OK", "Cancel"],
-                    parent=None,
-                )
-
-        return valid_inputs
+        return msg
 
     def check_output(self):
         """Method that checks if outputs of the anatomical pipeline are available.

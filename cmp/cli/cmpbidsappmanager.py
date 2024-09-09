@@ -5,6 +5,7 @@
 #  This software is distributed under the open-source license Modified BSD.
 """This module defines the `cmpbidsappmanager` script that launches the Graphical User Interface."""
 
+
 import platform
 import os
 import sys

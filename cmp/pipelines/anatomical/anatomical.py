@@ -147,7 +147,7 @@ class AnatomicalPipeline(cmp_common.Pipeline):
     def _update_parcellation_scheme(self):
         """Updates ``parcellation_scheme`` and ``atlas_info`` when ``parcellation_scheme`` is updated."""
         self.parcellation_scheme = self.stages["Parcellation"].config.parcellation_scheme
-        if self.parcellation_scheme != "Custom":
+        if self.parcellation_scheme != "Chimera":
             self.atlas_info = self.stages["Parcellation"].config.atlas_info
         else:
             self.atlas_info = {
@@ -382,7 +382,7 @@ class AnatomicalPipeline(cmp_common.Pipeline):
                 "Please see documentation for more details."
             )
 
-        if self.stages["Parcellation"].config.parcellation_scheme == "Custom":
+        if self.stages["Parcellation"].config.parcellation_scheme == "Chimera":
 
             custom_parc_nii_available = True
             custom_parc_tsv_available = True
@@ -598,12 +598,10 @@ class AnatomicalPipeline(cmp_common.Pipeline):
 
         if self.parcellation_scheme == "Lausanne2018":
             bids_atlas_label = "L2018"
-        elif self.parcellation_scheme == "NativeFreesurfer":
-            bids_atlas_label = "Desikan"
-        elif self.parcellation_scheme == "Custom":
+        elif self.parcellation_scheme == "Chimera":
             bids_atlas_label = self.stages["Parcellation"].config.custom_parcellation.atlas
 
-        if self.parcellation_scheme != "Custom":
+        if self.parcellation_scheme != "Chimera":
             if bids_atlas_label == "Desikan":
                 roiv_files = glob.glob(
                     os.path.join(
@@ -736,7 +734,7 @@ class AnatomicalPipeline(cmp_common.Pipeline):
         # sinker.inputs.parametrization = True  # Store output in parametrized structure (for MapNode)
 
         # Dataname substitutions in order to comply with BIDS derivatives specifications
-        if self.stages["Parcellation"].config.parcellation_scheme == "Custom":
+        if self.stages["Parcellation"].config.parcellation_scheme == "Chimera":
             custom_atlas = self.stages["Parcellation"].config.custom_parcellation.atlas
             custom_atlas_res = self.stages["Parcellation"].config.custom_parcellation.res
             if custom_atlas_res is not None and custom_atlas_res != "":
@@ -793,30 +791,6 @@ class AnatomicalPipeline(cmp_common.Pipeline):
                     sinker.inputs.substitutions.append(
                         (f'{scale}_roi_stats.tsv', self.subject + f'_atlas-L2018_res-{scale}_stats.tsv')
                     )
-                # fmt: on
-            elif self.parcellation_scheme == "NativeFreesurfer":
-                # fmt: off
-                sinker.inputs.substitutions.append(
-                    ("aparc+aseg.native.nii.gz", self.subject + "_desc-aparcaseg_dseg.nii.gz")
-                )
-                sinker.inputs.substitutions.append(
-                    ("ROIv_HR_th_freesurferaparc.nii.gz", self.subject + "_atlas-Desikan_dseg.nii.gz")
-                )
-                sinker.inputs.substitutions.append(
-                    ("freesurferaparc.graphml", self.subject + "_atlas-Desikan_dseg.graphml")
-                )
-                sinker.inputs.substitutions.append(
-                    ("FreeSurferColorLUT_adapted.txt", self.subject + "_atlas-Desikan_FreeSurferColorLUT.txt")
-                )
-                sinker.inputs.substitutions.append(
-                    ("_createBIDSLabelIndexMappingFile0/", "")
-                )
-                sinker.inputs.substitutions.append(
-                    ("freesurferaparc.tsv", self.subject + "_atlas-Desikan_dseg.tsv")
-                )
-                sinker.inputs.substitutions.append(
-                    ("freesurferaparc_roi_stats.tsv", self.subject + "_atlas-Desikan_stats.tsv")
-                )
                 # fmt: on
 
         return sinker

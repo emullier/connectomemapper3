@@ -359,17 +359,7 @@ class QualityInspectorWindow(HasTraits):
                 print(
                     "  .. INFO: Selected session %s" % self.project_info.subject_session
                 )
-                if self.anat_pipeline is not None:
-                    self.anat_pipeline.stages[
-                        "Segmentation"
-                    ].config.freesurfer_subject_id = os.path.join(
-                        self.project_info.base_directory,
-                        "derivatives",
-                        __freesurfer_directory__,
-                        "{}_{}".format(
-                            self.project_info.subject, self.project_info.subject_session
-                        ),
-                    )
+
             else:
                 print("  .. INFO: No session detected")
                 self.project_info.anat_config_file = os.path.join(
@@ -440,16 +430,6 @@ class QualityInspectorWindow(HasTraits):
                         )
                     else:
                         self.eeg_pipeline = None
-
-                if self.anat_pipeline is not None:
-                    self.anat_pipeline.stages[
-                        "Segmentation"
-                    ].config.freesurfer_subjects_dir = os.path.join(
-                        self.project_info.base_directory,
-                        "derivatives",
-                        __freesurfer_directory__,
-                        "{}".format(self.project_info.subject),
-                    )
 
             if self.anat_pipeline is not None:
                 print("> Anatomical pipeline output inspection")

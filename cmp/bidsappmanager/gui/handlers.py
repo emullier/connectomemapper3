@@ -768,12 +768,6 @@ class MainWindowHandler(Handler):
                 loaded_project.parcellation_scheme = self.anat_pipeline.stages[
                     "Parcellation"
                 ].config.parcellation_scheme
-                loaded_project.freesurfer_subjects_dir = self.anat_pipeline.stages[
-                    "Segmentation"
-                ].config.freesurfer_subjects_dir
-                loaded_project.freesurfer_subject_id = self.anat_pipeline.stages[
-                    "Segmentation"
-                ].config.freesurfer_subject_id
 
                 ui_info.ui.context["object"].project_info = loaded_project
 

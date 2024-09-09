@@ -97,7 +97,7 @@ class ParcellationConfig(HasTraits):
     pipeline_mode = Enum(["Diffusion", "fMRI"])
     parcellation_scheme = Str("Lausanne2018")
     parcellation_scheme_editor = List(
-        ["NativeFreesurfer", "Lausanne2018", "Custom"]
+        ["Lausanne2018", "Chimera"]
     )
     include_thalamic_nuclei_parcellation = Bool(True)
     ants_precision_type = Enum(["double", "float"])
@@ -175,7 +175,7 @@ class ParcellationStage(Stage):
         """
         outputnode.inputs.parcellation_scheme = self.config.parcellation_scheme
 
-        if self.config.parcellation_scheme != "Custom":
+        if self.config.parcellation_scheme != "Chimera":
 
             parc_node = pe.Node(
                 interface=Parcellate(),
@@ -521,7 +521,7 @@ class ParcellationStage(Stage):
         )
         anat_sinker_report = os.path.join(anat_sinker_dir, "_report", "report.rst")
 
-        if self.config.parcellation_scheme != "Custom":
+        if self.config.parcellation_scheme != "Chimera":
             if os.path.exists(anat_sinker_report):
                 anat_outputs = get_pipeline_dictionary_outputs(
                     datasink_report=anat_sinker_report,

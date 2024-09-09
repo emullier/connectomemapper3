@@ -33,34 +33,36 @@ class ParcellationConfigUI(ParcellationConfig):
     ---------
     cmp.stages.parcellation.parcellation.ParcellationConfig
     """
+    cortex_option = Enum("Desikan [D]", "Destrieux [X]", "DKT40 [T]", "Brainnetome [B]", 
+                         "Brodmann [R]", "Campbell [C]", "Kleist [K]", "Lausanne [L]",
+                         "HCPMM [H]", "Schaefer [S]", "Smith [M]", "VonEconomo [V]",
+                         "Yeo 7 and 17 networks [Y]", "Flechsig [F]")
+    basal_ganglia_option = Enum("Aseg [F]", "First [R]")
+    thalamus_option = Enum("Aseg [F]", "First [R]", "Thalamic nuclei [I]", "MIAL [M]")
+    amygdala_option = Enum("Aseg [F]", "Amygdala nuclei [I]", "First [R]")
+    hippocampus_option = Enum("Aseg [F]", "First [R]", "Hippocampal subfields [I]", "Head body and tail [H]")
+    hypothalamus_option = Enum("Aseg [F]",  "Hypothalamic nuclei [I]")
+    cerebellum_option = Enum("Aseg [F]")
+    brainstem_option = Enum("Aseg [F]",  "Brainstem regions [I]")
+    gyral_wm_option = Enum("Subcortical WM parcellation using FreeSurfer [F]")
+    
 
-    custom_parcellation_group = VGroup(
-        Item('object.custom_parcellation.toolbox_derivatives_dir', label="Derivatives directory"),
-        Item('object.custom_parcellation.atlas', label="atlas"),
-        Item('object.custom_parcellation.res', label="res"),
-        Item('object.custom_parcellation.suffix', label="suffix", style='readonly'),
-        label="Custom parcellation"
-    )
+    #custom_parcellation_group = VGroup(
+    #    cortex_option = Enum("Desikan", "Destrieux"),
+    #    basal_ganglia_option = Enum("aseg", "first"),
+    #    label="Custom parcellation"
+    #
 
     traits_view = View(
-        Item(
-            "parcellation_scheme", editor=EnumEditor(name="parcellation_scheme_editor")
-        ),
-        Group(
-            Include('custom_parcellation_group'),
-            visible_when='parcellation_scheme=="Custom"',
-        ),
-        Group(
-            "segment_hippocampal_subfields",
-            "segment_brainstem",
-            "include_thalamic_nuclei_parcellation",
-            Item(
-                "ants_precision_type",
-                label="ANTs precision type",
-                enabled_when="include_thalamic_nuclei_parcellation",
-            ),
-            visible_when='parcellation_scheme=="Lausanne2018"',
-        ),
+            Item("cortex_option", label="Cortex"),
+            Item("basal_ganglia_option", label="Basal Ganglia"),
+            Item("thalamus_option", label="Thalamus"),
+            Item("amygdala_option", label="Amygdala"),
+            Item("hippocampus_option", label="Hippocampus"),
+            Item("hypothalamus_option", label="Hypothalamus"),
+            Item("cerebellum_option", label="Cerebellum"),
+            Item("brainstem_option", label="Brainstem"),
+            Item("gyral_wm_option", label="Gyral white matter")
     )
 
 
