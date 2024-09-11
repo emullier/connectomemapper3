@@ -290,7 +290,7 @@ def cmat(
             "  >> Create the connection matrix (%s rois)" % parval["number_of_regions"]
         )
 
-        nROIs = parval["number_of_regions"]
+        nROIs = int(parval["number_of_regions"])
         G = nx.Graph()
 
         # Add node information from parcellation
@@ -376,7 +376,7 @@ def cmat(
                 fiberlabels[i, 0] = -1
                 continue
 
-            if startROI > nROIs or endROI > nROIs:
+            if startROI > int(nROIs) or endROI > int(nROIs):
                 print(" .. ERROR: Start or endpoint of fiber terminate in a voxel which is labeled higher")
                 print("           than is expected by the parcellation node information.")
                 print("           Start ROI: %i, End ROI: %i" % (startROI, endROI))
@@ -883,7 +883,7 @@ class RsfmriCmat(BaseInterface):
         print("   .. parcellation : %s" % self.inputs.parcellation_scheme)
         print("================================================")
 
-        fdata = nib.load(self.inputs.func_file).get_data()
+        fdata = nib.load(self.inputs.func_file).get_fdata()
         tp = fdata.shape[3]
 
         if self.inputs.parcellation_scheme != "Custom":
@@ -898,7 +898,7 @@ class RsfmriCmat(BaseInterface):
                         if parkey in graphml:
                             roi_graphml_fname = graphml
                     roi = nib.load(roi_fname)
-                    roiData = roi.get_data()
+                    roiData = roi.get_fdata()
                     resolutions[parkey]["number_of_regions"] = roiData.max()
                     resolutions[parkey]["node_information_graphml"] = os.path.abspath(roi_graphml_fname)
 
@@ -918,18 +918,18 @@ class RsfmriCmat(BaseInterface):
                     roi_fname = vol
 
             roi = nib.load(roi_fname)
-            mask = roi.get_data()
+            mask = roi.get_fdata()
 
             # Compute average time-series
             print("  ************************************************")
             print("  >> Compute average rs-fMRI signal for each cortical ROI ")
-            nROIs = parval["number_of_regions"]  # number of ROIs for current resolution
+            nROIs = int(parval["number_of_regions"])  # number of ROIs for current resolution
 
             # matrix number of rois vs timepoints
-            ts = np.zeros((nROIs, tp), dtype=np.float32)
+            ts = np.zeros((int(nROIs), int(tp)), dtype=np.float32)
 
             # loop throughout all the ROIs (current resolution)
-            for i in range(1, nROIs + 1):
+            for i in range(1, int(nROIs) + 1):
                 ts[i - 1, :] = fdata[mask == i].mean(axis=0)
 
             # Save average roi time-series
