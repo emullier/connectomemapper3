@@ -1,8 +1,10 @@
 name: cmpGui_updPack
+
 channels:
   - conda-forge
   - bioconda
   - defaults
+
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=2_gnu
@@ -52,4 +54,16 @@ dependencies:
   - xarray=2024.7.0=pyhd8ed1ab_0
   - xz=5.2.6=h166bdaf_0
   - zipp=3.20.1=pyhd8ed1ab_0
-prefix: /opt/anaconda3/envs/cmpGui_updPack
+  - codecarbon=2.2.2
+  - pip:
+      - traits==6.3.2
+      - traitsui==8.0.0
+      - pyqt5==5.15.11
+      - pyface==8.0.0
+      - pybids==0.17.1
+      - nipype==1.8.6
+      - future==0.18.3
+      - mne==0.24.1
+      - pycartool==0.1.1
+      - mne-connectivity==0.3
+

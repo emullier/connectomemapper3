@@ -121,7 +121,7 @@ if include_conda_pip_dependencies:
                 # Adds package name to dependencies
                 install_requires.append(line)
 # Install automatically codecarbon with CMP3
-install_requires.append('codecarbon==2.2.2')
+#sinstall_requires.append('codecarbon==2.2.2')
 install_requires.append('dash-bootstrap-components==0.13.1')
 print(f'Install requires: {install_requires}')
 print(f'Dependency links: {dependency_links}')
@@ -167,7 +167,7 @@ def main():
             "Operating System :: POSIX",
             "Operating System :: Unix",
             "Operating System :: MacOS",
-            "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.11",
         ],
         maintainer="Connectomics Lab, CHUV",
         maintainer_email="sebastien.tourbier@alumni.epfl.ch",

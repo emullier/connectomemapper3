@@ -8,17 +8,23 @@
 import csv
 import os
 import json
+import subprocess
 from traits.api import (HasTraits, Str, Enum)
 
 from cmp.info import __version__
 from nipype import __version__ as nipype_version
+
+# Detect FreeSurfer version
+freesurfer_version = "7.4.1"
+
+
 
 
 # Directories for derivatives compliant to BIDS `1.4.0` (e.g. <toolbox>-<version>)
 # Need to be declared before import the pipeline modules
 __cmp_directory__ = f'cmp-{__version__}'
 __nipype_directory__ = f'nipype-{nipype_version}'
-__freesurfer_directory__ = f'freesurfer-7.1.1'
+__freesurfer_directory__ = f'freesurfer-{freesurfer_version}'
 __cartool_directory__ = f'cartool-v3.80'
 __eeglab_directory__ = f'eeglab-v14.1.1'
 

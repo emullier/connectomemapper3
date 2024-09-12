@@ -149,7 +149,6 @@ dependencies:
       - ci-info==0.3.0
       - click==8.1.7
       - codecarbon==2.2.2
-      - connectomemapper==3.2.0
       - dash==2.18.0
       - dash-bootstrap-components==0.13.1
       - dash-core-components==2.0.0
@@ -218,4 +217,3 @@ dependencies:
       - werkzeug==3.0.4
       - wrapt==1.16.0
       - xarray==2024.7.0
-prefix: /opt/anaconda3/envs/cmp_updPack
